@@ -160,27 +160,35 @@ function Panel() {
     const el = cardsRef.current;
     if (!el) return;
 
-    setLayout({
-      width: el.getBoundingClientRect().width,
-      scrollTop: el.scrollTop,
-      viewportHeight: el.clientHeight,
-    });
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      const h = el.clientHeight;
+      setLayout(l => ({
+        ...l,
+        ...(w > 0 ? { width: w } : {}),
+        ...(h > 0 ? { viewportHeight: h } : {}),
+      }));
+    };
+
+    measure();
 
     const onScroll = () => setLayout(l => ({ ...l, scrollTop: el.scrollTop }));
     el.addEventListener("scroll", onScroll, { passive: true });
 
-    const ro = new ResizeObserver(() => {
-      setLayout(l => ({
-        ...l,
-        width: el.getBoundingClientRect().width,
-        viewportHeight: el.clientHeight,
-      }));
-    });
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
+
+    // Re-measure when the container enters the viewport (e.g. PHP modal reopens after mount)
+    const io = new IntersectionObserver(
+      entries => { if (entries.some(e => e.isIntersecting)) measure(); },
+      { threshold: 0 }
+    );
+    io.observe(el);
 
     return () => {
       el.removeEventListener("scroll", onScroll);
       ro.disconnect();
+      io.disconnect();
     };
   }, []);
 
