@@ -20,7 +20,6 @@ export default function Toolbar({ narrowMode = false, onShowTree }) {
   const options = [
     { icon: "wxi-view-sequential", id: "table" },
     { icon: "wxi-view-grid", id: "cards" },
-    { icon: "wxi-view-column", id: "panels" },
   ];
 
   function changeMode({ value }) {
