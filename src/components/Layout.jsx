@@ -86,19 +86,24 @@ function Layout({ readonly = false, menuOptions, extraInfo }) {
       return clickOutside(node, hideSidebar).destroy;
   }, [hideSidebar]);
 
-  // bind:clientWidth on sidebar
-  useEffect(() => {
-    const node = sidebarRef.current;
-    if (!node) return;
-    const ro = new ResizeObserver(() => {
-      if (node) setSidebarWidth(node.clientWidth);
-    });
-    ro.observe(node);
-    // initialize immediately
-    if (node) setSidebarWidth(node.clientWidth);
-    return () => {
-      ro.disconnect();
-    };
+  // bind:clientWidth on sidebar; a callback ref re-binds the observer on every
+  // remount, since the sidebar unmounts in narrow mode with preview open
+  const sidebarWidthObserver = useRef(null);
+  const attachSidebar = useCallback(node => {
+    sidebarRef.current = node;
+    if (sidebarWidthObserver.current) {
+      sidebarWidthObserver.current.disconnect();
+      sidebarWidthObserver.current = null;
+    }
+    if (node) {
+      const measure = () => {
+        if (node.clientWidth > 0) setSidebarWidth(node.clientWidth);
+      };
+      const ro = new ResizeObserver(measure);
+      ro.observe(node);
+      sidebarWidthObserver.current = ro;
+      measure();
+    }
   }, []);
 
   const previewOption = useMemo(
@@ -296,7 +301,7 @@ function Layout({ readonly = false, menuOptions, extraInfo }) {
                         ]
                           .filter(Boolean)
                           .join(" ")}
-                        ref={sidebarRef}
+                        ref={attachSidebar}
                       >
                         <Sidebar readonly={readonly} menuOptions={menuOptions} />
                       </div>
